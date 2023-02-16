@@ -1,0 +1,26 @@
+1. Pown
+	Pierwszy ruch - dwa lub jedno pole do przodu - 					JEST
+	Drugi+ ruch - jedno pole do przodu - 						JEST
+	Możliwe bicie po skosach - 							JEST
+	Możliwe bicie w przelocie -
+	Awans na królówke - 								JEST
+	Awans na każdą możliwą figure - 
+
+2. Król
+	Jeden ruch w dowolną stronę - 							JEST
+	Roszada -
+
+3. Dama:
+	Ruch po skosach - 								JEST
+	Ruch w liniach prostych - 							JEST
+		
+4. Bishop:	
+	Ruch po skosach - 								JEST
+
+5. Rook:
+	Ruch w liniach prostych - 							JEST
+
+6. Exception
+	Figura nie może się ruszyć jeśli broni króla
+	Jeśli król jest szachowany to trzeba go zasłonić lub się nim ruszyć
+	Figura nie może zbić swoich figur - 						JEST
