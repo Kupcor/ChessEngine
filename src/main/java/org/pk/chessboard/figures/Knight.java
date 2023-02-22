@@ -12,16 +12,15 @@ public class Knight extends Figure implements Moves {
     public Knight(double width, double height, String figureType) {
         super(width, height, figureType);
         if (figureType.equals("N")) {
-            this.figure.setGraphic(new ImageView(new Image(String.valueOf(Field.class.getResource("assets/WKnight.png")))));
+            this.figureLabel.setGraphic(new ImageView(new Image(String.valueOf(Field.class.getResource("assets/WKnight.png")))));
         } else {
-            this.figure.setGraphic(new ImageView(new Image(String.valueOf(Field.class.getResource("assets/BKnight.png")))));
+            this.figureLabel.setGraphic(new ImageView(new Image(String.valueOf(Field.class.getResource("assets/BKnight.png")))));
         }
     }
 
     @Override
-    public ArrayList<Field> setMoveRestrictions(ArrayList<ArrayList<Field>> fieldsList, ArrayList<ArrayList<Field>> previousBoardState, int verticalPosition, int horizontalPosition) {
+    public ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> fieldsList, ArrayList<ArrayList<Field>> previousBoardState, int verticalPosition, int horizontalPosition) {
         ArrayList<Field> filteredFields = new ArrayList<>();
-        Field sourceField =fieldsList.get(verticalPosition).get(horizontalPosition);
 
         int[][] directions = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};
 
@@ -34,10 +33,8 @@ public class Knight extends Figure implements Moves {
             }
 
             Field targetField = fieldsList.get(verticalDirection).get(horizontalDirection);
+            filteredFields.add(targetField);
 
-            if (targetField.getChildren().isEmpty() || targetField.getFigure().getIsFigureWhite() != sourceField.getFigure().getIsFigureWhite()) {
-                filteredFields.add(targetField);
-            }
         }
 
         return filteredFields;

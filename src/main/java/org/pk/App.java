@@ -5,10 +5,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Group;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import org.pk.chessboard.ChessBoard;
+import org.pk.chessboard.ChessGame;
 
 import java.io.IOException;
 
@@ -22,7 +21,7 @@ public class App extends Application {
     private static Scene scene;
     private static final Group mainGroup = new Group();
 
-    private final ChessBoard chessBoard = new ChessBoard(480, 480);
+    private final ChessGame chessGame = new ChessGame(480, 480);
 
     @Override
     public void start(Stage mainStage) throws IOException {
@@ -30,7 +29,7 @@ public class App extends Application {
         mainStage.setTitle("Chess game");
 
         //  Adding elements
-        mainGroup.getChildren().add(chessBoard);
+        mainGroup.getChildren().add(chessGame);
 
 
         // scene = new Scene(loadFXML("primary"), 500, 500); For now we do not need this
