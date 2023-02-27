@@ -6,12 +6,10 @@ import org.pk.chessboard.figures.*;
 
 import java.util.ArrayList;
 
-
-public class Figure extends AnchorPane implements Moves {
-    protected String figureType;
-    protected boolean DidFigureNotMove;
+public class Figure extends AnchorPane implements Moves, Cloneable {
+    protected final String figureType;
+    protected boolean didFigureNotMove;
     protected boolean isFigureWhite;
-
     protected Label figureLabel = new Label();
 
     public Figure(double width, double height, String figureType) {
@@ -20,13 +18,14 @@ public class Figure extends AnchorPane implements Moves {
 
         this.figureType = figureType;
         this.isFigureWhite = Character.isUpperCase(this.figureType.charAt(0));
-        this.DidFigureNotMove = true;
+        //  Może być problem przy "odświeżaniu" pola przy set previous state
+        this.didFigureNotMove = true;
 
         this.figureLabel.setPrefSize(width / 8, height / 8);
         this.getChildren().add(this.figureLabel);
     }
 
-    public final Figure createFigure(double width, double height, String figureType) {
+    public static Figure createFigure(double width, double height, String figureType) {
         if ("Kk".contains(figureType)) return new King(width, height, figureType);
         if ("Qq".contains(figureType)) return new Queen(width, height, figureType);
         if ("Nn".contains(figureType)) return new Knight(width, height, figureType);
@@ -35,17 +34,17 @@ public class Figure extends AnchorPane implements Moves {
         return new Pawn(width, height, figureType);
     }
 
-    @Override
     public ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> fieldsList, ArrayList<ArrayList<Field>> previousBoardState, int verticalPosition, int horizontalPosition) {
         return null;
     }
 
-    public boolean getDidFigureNotMove() {
-        return this.DidFigureNotMove;
+    public void setDidFigureMove() {
+        //  If a chess piece has been moved, the variable didFigureNotMove is set permanently to false
+        this.didFigureNotMove = false;
     }
 
-    public void setDidFigureMove() {
-        this.DidFigureNotMove = false;
+    public boolean getDidFigureNotMove() {
+        return this.didFigureNotMove;
     }
 
     public boolean getIsFigureWhite() {
@@ -54,6 +53,17 @@ public class Figure extends AnchorPane implements Moves {
 
     public String getFigureType() {
         return this.figureType;
+    }
+
+    @Override
+    public Figure clone() {
+        try {
+            Figure clone = (Figure) super.clone();
+            clone.figureLabel = new Label(this.figureLabel.getText());
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }
 

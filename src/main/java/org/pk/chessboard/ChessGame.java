@@ -2,25 +2,22 @@ package org.pk.chessboard;
 import javafx.scene.layout.*;
 import org.pk.chessboard.figures.King;
 import org.pk.chessboard.figures.Pawn;
+
 import java.util.ArrayList;
 
 public class ChessGame extends BorderPane {
-    private ArrayList<ArrayList<Field>> fieldsList = new ArrayList<>();
+    private final ArrayList<ArrayList<Field>> fieldsList;
     private ArrayList<ArrayList<Field>> previousState;
     private ArrayList<Field> figureAllowedMoves = new ArrayList<>();
-
-    private final BorderPane gameArea = new BorderPane();
-    private final GridPane mainChessBoard = new GridPane();
-    private final Figure figure;
 
     //  Figure objects to handle drag-and-drop functionalities
     private Field targetField = null;
     private Field sourceField = null;
-    private Field whiteKing;
-    private Field blackKing;
+    private Field whiteKing = null;
+    private Field blackKing = null;
 
-    private int width;
-    private int height;
+    private final int width;
+    private final int height;
 
     private boolean whiteTurn = true;
 
@@ -28,102 +25,114 @@ public class ChessGame extends BorderPane {
         this.setPrefSize(width, height);
         this.width = width;
         this.height = height;
-        this.figure = new Figure(width, height, "Figure creator");
 
-        //this.createBoard(width, height);
-        //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
-        this.setFiguresPositionOnBoard(width, height, "QRK6/8/8/8/8/8/8/7k");
-        this.setCenter(this.gameArea);
+        ChessBoard chessBoard = new ChessBoard(width, height);
+        this.setCenter(chessBoard);
 
-        //  Moving figures logic / mechanism
+        this.fieldsList = chessBoard.getFieldsList();
+        this.previousState = chessBoard.getPreviousState();
+
+        this.setFiguresPositionOnBoard(width, height, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        this.previousState = savePreviousState(this.fieldsList);
+
+        //  Mechanism of moves on a chessboard
         this.setOnMouseReleased(mouseEvent -> {
-            int horizontalField = (int) mouseEvent.getX() / (width / 8);
-            int verticalField = (int) mouseEvent.getY() / (height / 8);
-            for (Field field : figureAllowedMoves) field.setOriginFieldColor();
-
-            if (sourceField == null) return;
-
-            this.targetField = fieldsList.get(verticalField).get(horizontalField);
-            this.createPreviousGameState();
-            if (!figureAllowedMoves.contains(targetField) || targetField == sourceField) {
-                this.targetField = null;
-                return;
-            }
-
-            Figure sourceFigure = sourceField.getFigure();
-            Figure targetFigure = targetField.getFigure();
-
-            //  En passant
-            if (sourceFigure instanceof Pawn && (sourceField.getVerticalPosition() == 3 || sourceField.getVerticalPosition() == 4)) {
-                if (targetField.getChildren().isEmpty() && targetField.getHorizontalPosition() != sourceField.getHorizontalPosition()) {
-                    fieldsList.get(sourceField.getVerticalPosition()).get(targetField.getHorizontalPosition()).getAndRemoveFigure();
-                }
-            }
-
-            //  Castling
-            if (sourceFigure instanceof King && Math.abs(targetField.getHorizontalPosition() - sourceField.getHorizontalPosition()) > 1) {
-                Field secondTargetField;
-                Field rookField;
-                if (targetField.getHorizontalPosition() - sourceField.getHorizontalPosition() > 0) {
-                    secondTargetField = fieldsList.get(targetField.getVerticalPosition()).get(targetField.getHorizontalPosition() - 1);
-                    rookField = fieldsList.get(targetField.getVerticalPosition()).get(7);
-                } else {
-                    secondTargetField = fieldsList.get(targetField.getVerticalPosition()).get(targetField.getHorizontalPosition() + 1);
-                    rookField = fieldsList.get(targetField.getVerticalPosition()).get(0);
-                }
-                rookField.getFigure().setDidFigureMove();
-                secondTargetField.setFigure(rookField.getAndRemoveFigure());
-            }
-
-            if (targetField.getChildren().isEmpty() || sourceFigure.getIsFigureWhite() != targetFigure.getIsFigureWhite()) {
-                sourceFigure.setDidFigureMove();
-                targetField.setFigure(sourceField.getAndRemoveFigure());
-                if (sourceFigure instanceof King) {
-                    if (whiteTurn) this.whiteKing = targetField;
-                    else this.blackKing = targetField;
-                }
-                targetField.changeFieldColor("#ab7846");
-                sourceField = null;
-
-                if (this.whiteTurn && !this.whiteKing.checkIfFieldIsUnderAttack(fieldsList, previousState, true).isEmpty()) {
-                    System.out.println("White king still under attack");
-                    this.setFiguresPositionOnBoard(this.width, this.height, this.createFENOfActualState(this.previousState));
-                    return;
-                }
-                if (!this.whiteTurn && !this.blackKing.checkIfFieldIsUnderAttack(fieldsList, previousState, false).isEmpty()) {
-                    System.out.println("Black king under attack");
-                    this.setFiguresPositionOnBoard(this.width, this.height, this.createFENOfActualState(this.previousState));
-                    return;
-                }
-                this.checkGameStatus();
-                whiteTurn = !whiteTurn;
-            }
+            int horPos = (int)  mouseEvent.getX() / (this.width / 8);
+            int verPos = (int) mouseEvent.getY() / (this.height / 8);
+            this.selectFigureDestination(verPos, horPos);
         });
 
         this.setOnMousePressed(mouseEvent -> {
-            this.selectFigureToMove(mouseEvent.getY(), mouseEvent.getX());
+            int horPos = (int)  mouseEvent.getX() / (this.width / 8);
+            int verPos = (int) mouseEvent.getY() / (this.height / 8);
+            this.selectFigureToMove(verPos, horPos);
         });
-
     }
 
-    //  Move actions
-    private void selectFigureToMove(double verticalPosition, double horizontalPosition) {
-        int horPos = (int) horizontalPosition / (this.width / 8);
-        int verPos = (int) verticalPosition / (this.height / 8);
-        if (fieldsList.get(verPos).get(horPos).getChildren().isEmpty()) return;
-        if (fieldsList.get(verPos).get(horPos).getFigure().isFigureWhite != this.whiteTurn) return;
-        this.sourceField = fieldsList.get(verPos).get(horPos);
-        this.sourceField.setOriginFieldColor();
+    private void selectFigureToMove(int verPos, int horPos) {
+        Field selectedField = this.fieldsList.get(verPos).get(horPos);
+        if (selectedField.getChildren().isEmpty()) return;
+        if (selectedField.getFigure().isFigureWhite != this.whiteTurn) return;
+        this.sourceField = selectedField;
         this.sourceField.changeFieldColor("#cf9a65");
         this.figureAllowedMoves = this.sourceField.getFigure().getAvailableMoves(this.fieldsList, this.previousState, verPos, horPos);
         this.figureAllowedMoves.removeIf(field -> (!field.getChildren().isEmpty() && field.getFigure().isFigureWhite == this.whiteTurn));
-        for (Field field : figureAllowedMoves) {
-            field.changeFieldColor("ffffff");
+        for (Field field : figureAllowedMoves) field.changeFieldColor("#e3cea8");
+    }
+
+    private void selectFigureDestination(int verPos, int horPos) {
+        //for (Field field : figureAllowedMoves) field.setOriginFieldColor();
+        if (sourceField == null) return;
+        Field selectedField = fieldsList.get(verPos).get(horPos);
+
+        if (!isValidMove(selectedField)) return;
+
+        this.targetField = selectedField;
+        Figure sourceFigure = this.sourceField.getFigure();
+        Figure targetFigure = selectedField.getFigure();
+        this.previousState = savePreviousState(this.fieldsList);
+
+        this.executeEnPassantMechanism(this.sourceField, this.targetField);
+        this.executeCastlingMechanism(this.sourceField, this.targetField);
+
+        sourceFigure.setDidFigureMove();
+        targetField.setFigure(sourceField.getAndRemoveFigure());
+        if (sourceFigure instanceof King) {
+            if (whiteTurn) this.whiteKing = targetField;
+            else this.blackKing = targetField;
+        }
+        this.targetField.changeFieldColor("#ab7846");
+        this.sourceField = null;
+
+        this.executeCheckAndCheckMateMechanism();
+    }
+
+    private boolean isValidMove(Field selectedField) {
+        if (!this.figureAllowedMoves.contains(selectedField)) return false;
+        if (selectedField == sourceField) return false;
+        return selectedField.getChildren().isEmpty() || selectedField.getFigure().isFigureWhite != sourceField.getFigure().getIsFigureWhite();
+    }
+
+    private void executeEnPassantMechanism(Field sourceField, Field targetField) {
+        Figure sourceFigure = sourceField.getFigure();
+        if (sourceFigure instanceof Pawn && (sourceField.getVerticalPosition() == 3 || sourceField.getVerticalPosition() == 4)) {
+            if (targetField.getChildren().isEmpty() && targetField.getHorizontalPosition() != sourceField.getHorizontalPosition()) {
+                this.fieldsList.get(sourceField.getVerticalPosition()).get(targetField.getHorizontalPosition()).removeFigure();
+            }
         }
     }
 
-    //  Release action
+    private void executeCastlingMechanism(Field sourceField, Field targetField) {
+        Figure sourceFigure = sourceField.getFigure();
+        if (sourceFigure instanceof King && Math.abs(targetField.getHorizontalPosition() - sourceField.getHorizontalPosition()) > 1) {
+            Field secondTargetField;
+            Field rookField;
+            if (targetField.getHorizontalPosition() - sourceField.getHorizontalPosition() > 0) {
+                secondTargetField = fieldsList.get(targetField.getVerticalPosition()).get(targetField.getHorizontalPosition() - 1);
+                rookField = fieldsList.get(targetField.getVerticalPosition()).get(7);
+            } else {
+                secondTargetField = fieldsList.get(targetField.getVerticalPosition()).get(targetField.getHorizontalPosition() + 1);
+                rookField = fieldsList.get(targetField.getVerticalPosition()).get(0);
+            }
+            rookField.getFigure().setDidFigureMove();
+            secondTargetField.setFigure(rookField.getAndRemoveFigure());
+        }
+    }
 
+    private void executeCheckAndCheckMateMechanism() {
+        if (this.whiteTurn && !this.whiteKing.checkIfFieldIsUnderAttack(fieldsList, previousState, true).isEmpty()) {
+            System.out.println("White king still under attack");
+            setFiguresPositionOnBoard(this.width, this.height, this.createFENOfBoardState(this.previousState));
+            return;
+        }
+        if (!this.whiteTurn && !this.blackKing.checkIfFieldIsUnderAttack(fieldsList, previousState, false).isEmpty()) {
+            System.out.println("Black king under attack");
+            setFiguresPositionOnBoard(this.width, this.height, this.createFENOfBoardState(this.previousState));
+            return;
+        }
+        this.checkGameStatus();
+        whiteTurn = !whiteTurn;
+    }
 
     // Check game status
     private void checkGameStatus() {
@@ -142,139 +151,134 @@ public class ChessGame extends BorderPane {
                 }
             }
         }
-
         //  Material Check
-
-
         //  Repeated position
-
-
         //  50 moves rules
     }
 
-    //  Still sth is wrong
-    //
-    //  This checking only moves to cover king, it does not check if king can move
-    private ArrayList<Field> evaluateGame(boolean whiteTurn, ArrayList<ArrayList<Field>> fieldList, ArrayList<ArrayList<Field>> previousState) {
-        ArrayList<Field> opponentPieces = new ArrayList<>();
+    //  Method return list of moves that can save a king
+    private ArrayList<Field> evaluateGame(boolean whiteMove, ArrayList<ArrayList<Field>> currentFields, ArrayList<ArrayList<Field>> previousState) {
+        ArrayList<Field> opponentPieces = this.getOpponentPieces(whiteMove, currentFields);
         ArrayList<Field> savingMoves = new ArrayList<>();
-        Field kingPosition;
+        Field kingPosition = whiteMove ? this.blackKing : this.whiteKing;
 
-        if (whiteTurn) kingPosition = this.blackKing;
-        else kingPosition = this.whiteKing;
-
-        for (ArrayList<Field> list : fieldList) {
-            for (Field field : list) {
-                if (!field.getChildren().isEmpty() && field.getFigure().getIsFigureWhite() != whiteTurn) {
-                    opponentPieces.add(field);
-                }
-            }
-        }
-        for (Field field : opponentPieces) {
-            ArrayList<Field> availableFields = field.getFigure().getAvailableMoves(fieldList, previousState, field.getVerticalPosition(), field.getHorizontalPosition());
-            availableFields.removeIf(tempField -> (!tempField.getChildren().isEmpty() && tempField.getFigure().getIsFigureWhite() != whiteTurn));
+        for (Field opponentPiece : opponentPieces) {
+            ArrayList<Field> availableFields = opponentPiece.getFigure().getAvailableMoves(currentFields, previousState, opponentPiece.getVerticalPosition(), opponentPiece.getHorizontalPosition());
+            availableFields.removeIf(tempField -> (!tempField.getChildren().isEmpty() && tempField.getFigure().getIsFigureWhite() != whiteMove));
 
             Figure tempFigure = null;
             for (Field availableField : availableFields) {
                 if (!availableField.getChildren().isEmpty()) tempFigure = availableField.getFigure();
-                availableField.setFigure(field.getAndRemoveFigure());
-                if (kingPosition.checkIfFieldIsUnderAttack(fieldList, previousState, !whiteTurn).isEmpty()) {
+                this.swapFigures(opponentPiece, availableField);
+                if (kingPosition.checkIfFieldIsUnderAttack(currentFields, previousState, !whiteMove).isEmpty()) {
                     savingMoves.add(availableField);
                 }
-                field.setFigure(availableField.getAndRemoveFigure());
+                this.swapFigures(availableField, opponentPiece);
                 if (tempFigure != null) {
                     availableField.setFigure(tempFigure);
                     tempFigure = null;
                 }
             }
         }
-        for (Field field : kingPosition.getFigure().getAvailableMoves(fieldsList, previousState, kingPosition.getVerticalPosition(), kingPosition.getHorizontalPosition())) {
-            if (field.checkIfFieldIsUnderAttack(fieldList, previousState, !whiteTurn).isEmpty()) savingMoves.add(field);
-        }
+
+        kingPosition.getFigure().getAvailableMoves(currentFields, previousState, kingPosition.getVerticalPosition(), kingPosition.getHorizontalPosition())
+                .stream()
+                .filter(field -> field.checkIfFieldIsUnderAttack(currentFields, previousState, !whiteMove).isEmpty())
+                .forEach(savingMoves::add);
+        savingMoves.removeIf(availableField -> (!availableField.getChildren().isEmpty() && availableField.getFigure().isFigureWhite == !whiteMove));
+
         return savingMoves;
     }
 
-    //  To refactore
-    private void createBoard(double width, double height) {
-        this.mainChessBoard.getChildren().removeAll(this.mainChessBoard.getChildren());
-        this.fieldsList.clear();
-        this.mainChessBoard.setPrefSize(width, height);
-        for (int verticalField = 0; verticalField < 8; verticalField++) {
-            ArrayList<Field> tempArrayList = new ArrayList<>();
-            for (int horizontalField = 0; horizontalField < 8; horizontalField++) {
-                Field field = new Field(width, height, verticalField, horizontalField);
-                tempArrayList.add(field);
-
-                GridPane.setConstraints(field, horizontalField, verticalField);
-                this.mainChessBoard.getChildren().add(field);
+    //  Helper method for evaluateGame
+    private ArrayList<Field> getOpponentPieces(boolean isWhiteTurn, ArrayList<ArrayList<Field>> fieldList) {
+        ArrayList<Field> opponentPieces = new ArrayList<>();
+        for (ArrayList<Field> list : fieldList) {
+            for (Field field : list) {
+                if (!field.getChildren().isEmpty() && field.getFigure().getIsFigureWhite() != isWhiteTurn) {
+                    opponentPieces.add(field);
+                }
             }
-            this.fieldsList.add(tempArrayList);
         }
-        this.gameArea.setCenter(this.mainChessBoard);
+        return opponentPieces;
     }
 
-    //  To refactore
+    private void swapFigures(Field sourceField, Field targetField) {
+        Figure tempFigure = sourceField.getAndRemoveFigure();
+        targetField.setFigure(tempFigure);
+    }
+
+    //  We are using reference list fieldsList here
     private void setFiguresPositionOnBoard(double width, double height, String FEN) {
         //  FEN - Forsyth–Edwards Notation
-        String numbers = "12345678";
-        String figures = "KkQqRrBbNnPp";
-        this.createBoard(width, height);
+        String piecesNotation = "KkQqRrBbNnPp";
+        String emptySpaceNotation = "12345678";
+        Character rowSeparator = '/';
 
         int row = 0;
         int column = 0;
-        String currentCharacter;
 
-        for (int index = 0; index < FEN.length(); index++) {
-            currentCharacter = String.valueOf(FEN.charAt(index));
-            if (currentCharacter.equals("/")) {
+        for (Character currentChar : FEN.toCharArray()) {
+            if (currentChar == rowSeparator) {
                 column = 0;
                 row++;
                 continue;
             }
-            if (numbers.contains(currentCharacter)) column += Integer.parseInt(currentCharacter);
-            if (figures.contains(currentCharacter)) {
-                this.fieldsList.get(row).get(column).setFigure(this.figure.createFigure(width, height, currentCharacter));
-                if (currentCharacter.equals("k")) this.blackKing = this.fieldsList.get(row).get(column);
-                if (currentCharacter.equals("K")) this.whiteKing = this.fieldsList.get(row).get(column);
+            if (emptySpaceNotation.indexOf(currentChar) != -1) {
+                for (int i = column; i < column + Character.getNumericValue(currentChar); i++) this.fieldsList.get(row).get(i).removeFigure();
+                column += Character.getNumericValue(currentChar);
+            }
+            if (piecesNotation.indexOf(currentChar) != -1) {
+                this.fieldsList.get(row).get(column).setFigure(Figure.createFigure(width, height, String.valueOf(currentChar)));
+                Field previousField = this.previousState.get(row).get(column);
+                if (!previousField.getChildren().isEmpty() && !previousField.getFigure().getDidFigureNotMove()) this.fieldsList.get(row).get(column).getFigure().setDidFigureMove();
+                if (currentChar == 'k') this.blackKing = this.fieldsList.get(row).get(column);
+                if (currentChar == 'K') this.whiteKing = this.fieldsList.get(row).get(column);
                 column++;
             }
         }
-        this.createPreviousGameState();
     }
 
-    //  It's good -> to test
-    private String createFENOfActualState(ArrayList<ArrayList<Field>> currentFieldList) {
+    private String createFENOfBoardState(ArrayList<ArrayList<Field>> currentFields) {
         StringBuilder FEN = new StringBuilder();
-        for (int verticalPosition = 0; verticalPosition < 8; verticalPosition++) {
-            int freeFields = 0;
-            for (int horizontalPosition = 0; horizontalPosition < 8; horizontalPosition++) {
-                Field currentField = currentFieldList.get(verticalPosition).get(horizontalPosition);
-                if (currentField.getChildren().isEmpty()) {
-                    freeFields++;
-                } else {
-                    if (freeFields > 0) FEN.append(freeFields);
-                    FEN.append(currentField.getFigure().getFigureType());
-                    freeFields = 0;
+        for (ArrayList<Field> list : currentFields) {
+            int numberOfFreeFields = 0;
+            for (Field currentField : list) {
+                if (currentField.getChildren().isEmpty()) numberOfFreeFields++;
+                else {
+                    this.appendFields(FEN, numberOfFreeFields, currentField.getFigure().getFigureType());
+                    numberOfFreeFields = 0;
                 }
-                if (freeFields == 8) FEN.append(freeFields);
             }
-            FEN.append("/");
+            this.appendFields(FEN, numberOfFreeFields);
+            if (list != currentFields.get(currentFields.size() - 1)) FEN.append("/");
         }
         return FEN.toString();
     }
 
-    //  It's good - to test
-    private void createPreviousGameState() {
-        this.previousState = new ArrayList<>();
-        ArrayList<ArrayList<Field>> tempArray = new ArrayList<>(this.fieldsList);
-        for (ArrayList<Field> list : tempArray) {
+    //  Helper method for createFenOfBoardState
+    private void appendFields(StringBuilder FEN, int numberOfFreeFields, String figureType) {
+        if (numberOfFreeFields > 0) {
+            FEN.append(numberOfFreeFields);
+        }
+        FEN.append(figureType);
+    }
+
+    //  Overloaded helper method for createFenOfBoardState
+    private void appendFields(StringBuilder FEN, int numberOfFreeFields) {
+        appendFields(FEN, numberOfFreeFields, "");
+    }
+
+    private ArrayList<ArrayList<Field>> savePreviousState(ArrayList<ArrayList<Field>> currentFields) {
+        ArrayList<ArrayList<Field>> previousState = new ArrayList<>();
+        for (ArrayList<Field> list : currentFields) {
             ArrayList<Field> newList = new ArrayList<>();
             for (Field field : list) {
-                Field newField = new Field(field.getWidth(), field.getHeight(), field.getVerticalPosition(), field.getHorizontalPosition());
-                if (field.getFigure() != null) newField.setFigure(new Figure(field.getWidth(), field.getHeight(), field.getFigure().getFigureType()));
+                Field newField = new Field(field);
                 newList.add(newField);
             }
-            this.previousState.add(newList);
+            previousState.add(newList);
         }
+        return previousState;
     }
 }

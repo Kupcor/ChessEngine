@@ -28,7 +28,7 @@ public class King extends Figure implements Moves {
         //  Temp unavailable - to be tested
         availableFields.removeIf(field -> !field.checkIfFieldIsUnderAttack(fieldsList, previousBoardState, isWhiteKing).isEmpty());
 
-        if (this.DidFigureNotMove && sourceField.checkIfFieldIsUnderAttack(fieldsList, previousBoardState, sourceField.getFigure().getIsFigureWhite()).isEmpty()) {
+        if (this.didFigureNotMove && sourceField.checkIfFieldIsUnderAttack(fieldsList, previousBoardState, sourceField.getFigure().getIsFigureWhite()).isEmpty()) {
             //  Short castling
             Field firstRightField = fieldsList.get(verticalPosition).get(horizontalPosition+1);
             Field secondRightField = fieldsList.get(verticalPosition).get(horizontalPosition+2);

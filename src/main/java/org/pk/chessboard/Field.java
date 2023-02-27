@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 public class Field extends AnchorPane {
     private Figure currentFigure = null;
-    private final String color;
+    private final String backgroundColor;
     private final int verticalPosition;
     private final int horizontalPosition;
     private final double width;
@@ -26,28 +26,49 @@ public class Field extends AnchorPane {
         this.width = width;
         this.height = height;
 
-        if ((horizontalPosition + verticalPosition) % 2 != 0) this.color = "#613d2e";
-        else this.color = "#a89187";
+        backgroundColor = (horizontalPosition + verticalPosition) % 2 != 0 ? "#613d2e" : "#a89187";
 
         this.setPrefSize(width / 8, height / 8);
-        this.setBackground(new Background(new BackgroundFill(Color.valueOf(this.color), new CornerRadii(0), new Insets(0))));
+        this.setBackground(new Background(new BackgroundFill(Color.valueOf(backgroundColor), new CornerRadii(0), new Insets(0))));
+    }
+
+    //  Copy constructor
+    public Field(Field otherField) {
+        this.verticalPosition = otherField.verticalPosition;
+        this.horizontalPosition = otherField.horizontalPosition;
+        this.width = otherField.width;
+        this.height = otherField.height;
+        this.backgroundColor = otherField.backgroundColor;
+
+        this.setPrefSize(width / 8, height / 8);
+
+        this.setBackground(new Background(new BackgroundFill(Color.valueOf(backgroundColor), new CornerRadii(0), new Insets(0))));
+        if (otherField.getFigure() != null) {
+            this.setFigure(Figure.createFigure(otherField.getWidth(), otherField.getHeight(), otherField.getFigure().getFigureType()));
+            if (!otherField.getFigure().getDidFigureNotMove()) this.getFigure().setDidFigureMove();
+        }
     }
 
     //  Change figure mechanism contains two public functions that are call from ChessBoard class events
     //  Function set figure change current figure on the field
     //  Here can be added code to filter that figure can't beat the other figure with same color - it probably little increase calculation
     public void setFigure(Figure figure) {
-        this.getChildren().removeAll(this.getChildren());
+        this.getChildren().remove(currentFigure);
         this.currentFigure = chooseNewFigure(figure);
-        this.getChildren().add(this.currentFigure);
+        this.getChildren().add(currentFigure);
     }
 
     //  Function get figure return current figure in the field and remove it from the field
     public Figure getAndRemoveFigure() {
-        this.getChildren().remove(this.currentFigure);
-        Figure tempFigure = this.currentFigure;
+        this.getChildren().remove(currentFigure);
+        Figure tempFigure = currentFigure;
         this.currentFigure = null;
         return tempFigure;
+    }
+
+    public void removeFigure() {
+        this.getChildren().removeAll(this.getChildren());
+        this.currentFigure = null;
     }
 
     //  Promote pawn to queen - temp solution
@@ -65,35 +86,28 @@ public class Field extends AnchorPane {
     }
 
     public void setOriginFieldColor() {
-        this.setBackground(new Background(new BackgroundFill(Color.valueOf(this.color), new CornerRadii(0), new Insets(0))));
+        this.setBackground(new Background(new BackgroundFill(Color.valueOf(backgroundColor), new CornerRadii(0), new Insets(0))));
     }
 
-    public ArrayList<Field> checkIfFieldIsUnderAttack(ArrayList<ArrayList<Field>> fieldList, ArrayList<ArrayList<Field>> previousState , boolean whiteMove) {
+    public ArrayList<Field> checkIfFieldIsUnderAttack(ArrayList<ArrayList<Field>> currentFields, ArrayList<ArrayList<Field>> previousState , boolean whiteMove) {
         ArrayList<Field> allFieldsThatAttackMainField = new ArrayList<>();
+        ArrayList<Field> opponentPieces = this.getOpponentPieces(whiteMove, currentFields);
 
-        ArrayList<Field> opponentPieces = new ArrayList<>();
-        for (ArrayList<Field> list : fieldList) {
-            for (Field field : list) {
-                if (!field.getChildren().isEmpty() && field.getFigure().getIsFigureWhite() != whiteMove) {
-                    opponentPieces.add(field);
-                }
-            }
-        }
         //  So yea there is only two exceptions - king and pawn.
         for (Field field : opponentPieces) {
             ArrayList<Field> figureAvailableMoves = new ArrayList<>();
-            //  King exception
+            //  King exception`
             if (field.getFigure() instanceof King) {
-                figureAvailableMoves.addAll(((King) field.getFigure()).getFieldsAroundKing(fieldList, field.getVerticalPosition(), field.getHorizontalPosition()));
+                figureAvailableMoves.addAll(((King) field.getFigure()).getFieldsAroundKing(currentFields, field.getVerticalPosition(), field.getHorizontalPosition()));
             }
             //  Pawn exception
             else if (field.getFigure() instanceof Pawn) {
                 int increment;
                 if (field.getFigure().getIsFigureWhite()) increment = -1;
                 else increment = 1;
-                if (field.getHorizontalPosition() + 1 < 8) figureAvailableMoves.add(fieldList.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() + 1));
-                if (field.getHorizontalPosition() - 1 > -1) figureAvailableMoves.add(fieldList.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() - 1));
-            } else figureAvailableMoves = field.getFigure().getAvailableMoves(fieldList, previousState, field.getVerticalPosition(), field.getHorizontalPosition());
+                if (field.getHorizontalPosition() + 1 < 8) figureAvailableMoves.add(currentFields.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() + 1));
+                if (field.getHorizontalPosition() - 1 > -1) figureAvailableMoves.add(currentFields.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() - 1));
+            } else figureAvailableMoves = field.getFigure().getAvailableMoves(currentFields, previousState, field.getVerticalPosition(), field.getHorizontalPosition());
 
             if (figureAvailableMoves.contains(this)) {
                 allFieldsThatAttackMainField.add(field);
@@ -102,8 +116,20 @@ public class Field extends AnchorPane {
         return allFieldsThatAttackMainField;
     }
 
+    private ArrayList<Field> getOpponentPieces(boolean isWhiteTurn, ArrayList<ArrayList<Field>> fieldList) {
+        ArrayList<Field> opponentPieces = new ArrayList<>();
+        for (ArrayList<Field> list : fieldList) {
+            for (Field field : list) {
+                if (!field.getChildren().isEmpty() && field.getFigure().getIsFigureWhite() != isWhiteTurn) {
+                    opponentPieces.add(field);
+                }
+            }
+        }
+        return opponentPieces;
+    }
+
     //  Getters
-    public String getColor() {return this.color;}
+    public String getBackgroundColor() {return this.backgroundColor;}
 
     public Figure getFigure() {return this.currentFigure;}
 
