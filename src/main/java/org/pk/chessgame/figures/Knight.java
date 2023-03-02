@@ -1,25 +1,23 @@
-package org.pk.chessboard.figures;
+package org.pk.chessgame.figures;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import org.pk.chessboard.Field;
-import org.pk.chessboard.Figure;
+import org.pk.chessgame.Field;
+import org.pk.chessgame.Figure;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class Knight extends Figure implements Moves {
 
     public Knight(double width, double height, String figureType) {
         super(width, height, figureType);
-        if (figureType.equals("N")) {
-            this.figureLabel.setGraphic(new ImageView(new Image(String.valueOf(Field.class.getResource("assets/WKnight.png")))));
-        } else {
-            this.figureLabel.setGraphic(new ImageView(new Image(String.valueOf(Field.class.getResource("assets/BKnight.png")))));
-        }
+        String pawnImage = figureType.equals("N") ? "WKnight.png" : "BKnight.png";
+        this.figureLabel.setGraphic(new ImageView(new Image(Objects.requireNonNull(Field.class.getResource("assets/" + pawnImage)).toString())));
     }
 
     @Override
-    public ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> fieldsList, ArrayList<ArrayList<Field>> previousBoardState, int verticalPosition, int horizontalPosition) {
+    public ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> currentStateFields, ArrayList<ArrayList<Field>> previousStateFields, int verticalPosition, int horizontalPosition) {
         ArrayList<Field> filteredFields = new ArrayList<>();
 
         int[][] directions = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};
@@ -32,7 +30,7 @@ public class Knight extends Figure implements Moves {
                 continue;
             }
 
-            Field targetField = fieldsList.get(verticalDirection).get(horizontalDirection);
+            Field targetField = currentStateFields.get(verticalDirection).get(horizontalDirection);
             filteredFields.add(targetField);
 
         }

@@ -7,7 +7,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import org.pk.chessboard.ChessGame;
+import org.pk.chessgame.ChessGame;
 
 import java.io.IOException;
 

@@ -1,15 +1,15 @@
-package org.pk.chessboard;
+package org.pk.chessgame;
 
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
-import org.pk.chessboard.figures.*;
+import org.pk.chessgame.figures.*;
 
 import java.util.ArrayList;
 
 public class Figure extends AnchorPane implements Moves, Cloneable {
     protected final String figureType;
     protected boolean didFigureNotMove;
-    protected boolean isFigureWhite;
+    protected final boolean isFigureWhite;
     protected Label figureLabel = new Label();
 
     public Figure(double width, double height, String figureType) {
@@ -18,7 +18,6 @@ public class Figure extends AnchorPane implements Moves, Cloneable {
 
         this.figureType = figureType;
         this.isFigureWhite = Character.isUpperCase(this.figureType.charAt(0));
-        //  Może być problem przy "odświeżaniu" pola przy set previous state
         this.didFigureNotMove = true;
 
         this.figureLabel.setPrefSize(width / 8, height / 8);
@@ -34,7 +33,7 @@ public class Figure extends AnchorPane implements Moves, Cloneable {
         return new Pawn(width, height, figureType);
     }
 
-    public ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> fieldsList, ArrayList<ArrayList<Field>> previousBoardState, int verticalPosition, int horizontalPosition) {
+    public ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> currentStateFields, ArrayList<ArrayList<Field>> previousStateFields, int verticalPosition, int horizontalPosition) {
         return null;
     }
 
@@ -55,6 +54,7 @@ public class Figure extends AnchorPane implements Moves, Cloneable {
         return this.figureType;
     }
 
+    //
     @Override
     public Figure clone() {
         try {

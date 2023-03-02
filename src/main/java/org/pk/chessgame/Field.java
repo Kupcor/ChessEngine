@@ -1,4 +1,4 @@
-package org.pk.chessboard;
+package org.pk.chessgame;
 
 import javafx.geometry.Insets;
 import javafx.scene.layout.AnchorPane;
@@ -6,9 +6,10 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.paint.Color;
-import org.pk.chessboard.figures.King;
-import org.pk.chessboard.figures.Pawn;
-import org.pk.chessboard.figures.Queen;
+import org.pk.chessgame.figures.King;
+import org.pk.chessgame.figures.Pawn;
+import org.pk.chessgame.figures.Queen;
+import org.pk.chessgame.helperclasses.EnemyPiecesSelector;
 
 import java.util.ArrayList;
 
@@ -73,7 +74,7 @@ public class Field extends AnchorPane {
 
     //  Promote pawn to queen - temp solution
     private Figure chooseNewFigure(Figure figure) {
-        if ((this.verticalPosition == 0 || this.verticalPosition == 7) && "Pp".contains(figure.getFigureType())) {
+        if ((this.verticalPosition == 0 || this.verticalPosition == 7) && figure instanceof Pawn) {
             return new Queen(this.width, this.height, figure.getIsFigureWhite() ? "Q" : "q");
         }
         return figure;
@@ -89,43 +90,31 @@ public class Field extends AnchorPane {
         this.setBackground(new Background(new BackgroundFill(Color.valueOf(backgroundColor), new CornerRadii(0), new Insets(0))));
     }
 
-    public ArrayList<Field> checkIfFieldIsUnderAttack(ArrayList<ArrayList<Field>> currentFields, ArrayList<ArrayList<Field>> previousState , boolean whiteMove) {
+    public ArrayList<Field> checkIfFieldIsUnderAttack(ArrayList<ArrayList<Field>> currentStateFields, ArrayList<ArrayList<Field>> previousStateFields , boolean whiteMove) {
         ArrayList<Field> allFieldsThatAttackMainField = new ArrayList<>();
-        ArrayList<Field> opponentPieces = this.getOpponentPieces(whiteMove, currentFields);
+        ArrayList<Field> opponentPieces = EnemyPiecesSelector.getOpponentPieces(whiteMove, currentStateFields);
 
         //  So yea there is only two exceptions - king and pawn.
         for (Field field : opponentPieces) {
             ArrayList<Field> figureAvailableMoves = new ArrayList<>();
             //  King exception`
             if (field.getFigure() instanceof King) {
-                figureAvailableMoves.addAll(((King) field.getFigure()).getFieldsAroundKing(currentFields, field.getVerticalPosition(), field.getHorizontalPosition()));
+                figureAvailableMoves.addAll(((King) field.getFigure()).getFieldsAroundKing(currentStateFields, field.getVerticalPosition(), field.getHorizontalPosition()));
             }
             //  Pawn exception
             else if (field.getFigure() instanceof Pawn) {
                 int increment;
                 if (field.getFigure().getIsFigureWhite()) increment = -1;
                 else increment = 1;
-                if (field.getHorizontalPosition() + 1 < 8) figureAvailableMoves.add(currentFields.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() + 1));
-                if (field.getHorizontalPosition() - 1 > -1) figureAvailableMoves.add(currentFields.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() - 1));
-            } else figureAvailableMoves = field.getFigure().getAvailableMoves(currentFields, previousState, field.getVerticalPosition(), field.getHorizontalPosition());
+                if (field.getHorizontalPosition() + 1 < 8) figureAvailableMoves.add(currentStateFields.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() + 1));
+                if (field.getHorizontalPosition() - 1 > -1) figureAvailableMoves.add(currentStateFields.get(field.getVerticalPosition() + increment).get(field.getHorizontalPosition() - 1));
+            } else figureAvailableMoves = field.getFigure().getAvailableMoves(currentStateFields, previousStateFields, field.getVerticalPosition(), field.getHorizontalPosition());
 
             if (figureAvailableMoves.contains(this)) {
                 allFieldsThatAttackMainField.add(field);
             }
         }
         return allFieldsThatAttackMainField;
-    }
-
-    private ArrayList<Field> getOpponentPieces(boolean isWhiteTurn, ArrayList<ArrayList<Field>> fieldList) {
-        ArrayList<Field> opponentPieces = new ArrayList<>();
-        for (ArrayList<Field> list : fieldList) {
-            for (Field field : list) {
-                if (!field.getChildren().isEmpty() && field.getFigure().getIsFigureWhite() != isWhiteTurn) {
-                    opponentPieces.add(field);
-                }
-            }
-        }
-        return opponentPieces;
     }
 
     //  Getters

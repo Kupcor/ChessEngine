@@ -1,4 +1,4 @@
-package org.pk.chessboard;
+package org.pk.chessgame;
 
 import javafx.application.Platform;
 import org.junit.jupiter.api.Assertions;
@@ -10,7 +10,7 @@ public class FieldTest {
     @BeforeAll
     static  void setUp() {
         //  Need to initialize JFX environment in order to test Objects/Classes that use JFX components
-        //  In this case figure objects use JFX Label component
+        //  In this case figure objects use JFX Label class
         Platform.startup(() -> {});
     }
 

@@ -6,5 +6,5 @@ module org.pk {
 
     opens org.pk to javafx.fxml;
     exports org.pk;
-    exports org.pk.chessboard;
+    exports org.pk.chessgame;
 }

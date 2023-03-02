@@ -1,6 +1,6 @@
-package org.pk.chessboard.figures;
+package org.pk.chessgame.figures;
 
-import org.pk.chessboard.Field;
+import org.pk.chessgame.Field;
 import java.util.ArrayList;
 
 public interface Moves {
@@ -9,5 +9,5 @@ public interface Moves {
     //  Occupy fields can be split to fields occupy by enemy and friendly figure (black and white figures).
     //  To prevent a figure from moving to a field occupied by a friendly figure, an occupying mechanism must be implemented separately.
     //  This is necessary to simplify the process of detecting whether an enemy king can capture a specific figure.
-    ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> fieldsList, ArrayList<ArrayList<Field>> previousBoardState, int verticalPosition, int horizontalPosition);
+    ArrayList<Field> getAvailableMoves(ArrayList<ArrayList<Field>> currentStateFields, ArrayList<ArrayList<Field>> previousStateFields, int verticalPosition, int horizontalPosition);
 }

@@ -1,4 +1,4 @@
-package org.pk.chessboard;
+package org.pk.chessgame;
 
 import javafx.scene.layout.GridPane;
 
