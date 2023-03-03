@@ -1,5 +1,4 @@
 package org.pk.chessgame;
-import javafx.scene.layout.*;
 import org.pk.chessgame.figures.King;
 import org.pk.chessgame.figures.Pawn;
 import org.pk.chessgame.helperclasses.EnemyPiecesSelector;
@@ -8,12 +7,11 @@ import org.pk.chessgame.helperclasses.FigureSwapper;
 
 import java.util.ArrayList;
 
-public class ChessGame extends BorderPane {
+public class ChessGame {
     private final ArrayList<ArrayList<Field>> currentStateFields;
     private ArrayList<ArrayList<Field>> previousStateFields;
     private ArrayList<Field> figureAllowedMoves;
 
-    //  Figure objects to handle drag-and-drop functionalities
     private Field targetField = null;
     private Field sourceField = null;
     private Field whiteKing = null;
@@ -24,35 +22,20 @@ public class ChessGame extends BorderPane {
 
     private boolean whiteTurn = true;
 
-    public ChessGame(int width, int height) {
-        this.setPrefSize(width, height);
+    public ChessGame(int width, int height, ArrayList<ArrayList<Field>> currentStateFields) {
         this.width = width;
         this.height = height;
 
-        ChessBoard chessBoard = new ChessBoard(width, height);
-        this.setCenter(chessBoard);
-
-        this.currentStateFields = chessBoard.getFieldsList();
-        this.previousStateFields = chessBoard.getPreviousState();
+        this.currentStateFields = currentStateFields;
+        this.previousStateFields = this.cloneState(this.currentStateFields);
 
         this.setFiguresPositionOnBoard(width, height, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-        this.previousStateFields = cloneState(this.currentStateFields);
-
-        //  Mechanism of moves on a chessboard
-        this.setOnMouseReleased(mouseEvent -> {
-            int horPos = (int)  mouseEvent.getX() / (this.width / 8);
-            int verPos = (int) mouseEvent.getY() / (this.height / 8);
-            this.selectFigureDestination(verPos, horPos);
-        });
-
-        this.setOnMousePressed(mouseEvent -> {
-            int horPos = (int)  mouseEvent.getX() / (this.width / 8);
-            int verPos = (int) mouseEvent.getY() / (this.height / 8);
-            this.selectFigureToMove(verPos, horPos);
-        });
     }
 
-    private void selectFigureToMove(int verPos, int horPos) {
+    public void selectFigureToMove(int verPos, int horPos) {
+        if (this.sourceField != null) this.sourceField.setOriginFieldColor();
+        if (this.targetField != null) this.targetField.setOriginFieldColor();
+        this.sourceField = null;
         Field selectedField = this.currentStateFields.get(verPos).get(horPos);
         if (selectedField.getChildren().isEmpty()) return;
         if (selectedField.getFigure().isFigureWhite != this.whiteTurn) return;
@@ -63,8 +46,8 @@ public class ChessGame extends BorderPane {
         for (Field field : figureAllowedMoves) field.changeFieldColor("#e3cea8");
     }
 
-    private void selectFigureDestination(int verPos, int horPos) {
-        //for (Field field : figureAllowedMoves) field.setOriginFieldColor();
+    public void selectFigureDestination(int verPos, int horPos) {
+        for (Field field : figureAllowedMoves) field.setOriginFieldColor();
         if (sourceField == null) return;
         Field selectedField = currentStateFields.get(verPos).get(horPos);
 
@@ -72,7 +55,6 @@ public class ChessGame extends BorderPane {
 
         this.targetField = selectedField;
         Figure sourceFigure = this.sourceField.getFigure();
-        Figure targetFigure = selectedField.getFigure();
         this.previousStateFields = cloneState(this.currentStateFields);
 
         this.executeEnPassantMechanism(this.sourceField, this.targetField);
@@ -85,8 +67,6 @@ public class ChessGame extends BorderPane {
             this.blackKing = whiteTurn ? this.blackKing : targetField;
         }
         this.targetField .changeFieldColor("#ab7846");
-        this.sourceField = null;
-
         this.executeCheckAndCheckMateMechanism();
     }
 

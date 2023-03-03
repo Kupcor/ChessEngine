@@ -7,7 +7,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import org.pk.chessgame.ChessGame;
+import org.pk.chessgame.Figure;
+import org.pk.chessgame.helperclasses.FigurePromoter;
 
 import java.io.IOException;
 
@@ -21,15 +22,15 @@ public class App extends Application {
     private static Scene scene;
     private static final Group mainGroup = new Group();
 
-    private final ChessGame chessGame = new ChessGame(480, 480);
+    private final ChessGameUI chessGameUI = new ChessGameUI(480, 480);
 
     @Override
     public void start(Stage mainStage) throws IOException {
         //  stage parameters
         mainStage.setTitle("Chess game");
 
-        //  Adding elements
-        mainGroup.getChildren().add(chessGame);
+        FigurePromoter figurePromoter = new FigurePromoter(Figure.createFigure(50, 50, "P"));
+        mainGroup.getChildren().add(chessGameUI);
 
 
         // scene = new Scene(loadFXML("primary"), 500, 500); For now we do not need this
