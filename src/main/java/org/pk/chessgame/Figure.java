@@ -54,16 +54,5 @@ public class Figure extends AnchorPane implements Moves, Cloneable {
         return this.figureType;
     }
 
-    //
-    @Override
-    public Figure clone() {
-        try {
-            Figure clone = (Figure) super.clone();
-            clone.figureLabel = new Label(this.figureLabel.getText());
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
-    }
 }
 

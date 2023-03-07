@@ -25,5 +25,12 @@ public class ChessGameUI extends BorderPane {
             int verPos = (int) mouseEvent.getY() / (height / 8);
             this.chessGame.selectFigureDestination(verPos, horPos);
         });
+
+        //  For scenario tests - temporary | to remove
+        chessBoard.setOnMouseClicked(mouseEvent->{
+            int horPos = (int)  mouseEvent.getX() / (width / 8);
+            int verPos = (int) mouseEvent.getY() / (height / 8);
+            //System.out.println(chessBoard.getFieldsList().get(verPos).get(horPos).getFigure().getDidFigureNotMove());
+        });
     }
 }
